@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"go-k8s-tools/internal/k8s"
-
-	"github.com/samber/lo"
 )
 
 func main() {
@@ -12,9 +12,10 @@ func main() {
 	var factory k8s.IClientFactory = &k8s.ClientFactory{}
 
 	client := factory.NewClient("")
-	deploymentNames := client.TestToGetDeploymentName(context.Background())
+	resources := client.GetTotalResource(context.Background(), "ctbc-csiw")
 
-	lo.ForEach(deploymentNames, func(item string, _ int) {
-		println(item)
-	})
+	for _, resource := range resources {
+		jsonData, _ := json.Marshal(resource)
+		fmt.Println(string(jsonData))
+	}
 }
