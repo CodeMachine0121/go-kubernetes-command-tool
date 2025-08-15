@@ -8,6 +8,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 type IClientFactory interface {
@@ -31,9 +32,16 @@ func (*ClientFactory) NewClient(kubeConfigPath string) *Client {
 		return nil
 	}
 
+	metricsClient, err := metricsclient.NewForConfig(config)
+	if err != nil {
+		fmt.Errorf("Failed to create metrics clientset")
+		return nil
+	}
+
 	return &Client{
-		clientset: clientset,
-		config:    config,
+		clientset:     clientset,
+		config:        config,
+		metricsClient: metricsClient,
 	}
 }
 

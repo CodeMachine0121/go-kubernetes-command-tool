@@ -2,6 +2,8 @@ package k8s
 
 import (
 	"context"
+	"fmt"
+	"go-k8s-tools/pkg/utils"
 
 	"github.com/samber/lo"
 	v1 "k8s.io/api/apps/v1"
@@ -9,11 +11,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 type Client struct {
-	clientset *kubernetes.Clientset
-	config    *rest.Config
+	clientset     *kubernetes.Clientset
+	metricsClient *metricsclient.Clientset
+	config        *rest.Config
 }
 
 // Clientset returns the underlying Kubernetes clientset
@@ -24,12 +28,6 @@ func (c *Client) Clientset() *kubernetes.Clientset {
 // Config returns the underlying Kubernetes configuration
 func (c *Client) Config() *rest.Config {
 	return c.config
-}
-
-type Resource struct {
-	Name, Namespace           string
-	RequestCPU, RequestMemory float32
-	LimitCPU, LimitMemory     float32
 }
 
 func (c *Client) GetTotalResource(ctx context.Context, namespace string) []Resource {
@@ -44,18 +42,18 @@ func (c *Client) GetTotalResource(ctx context.Context, namespace string) []Resou
 			var requestCPU, requestMemory, limitCPU, limitMemory float32
 
 			if cpuReq := container.Resources.Requests[corev1.ResourceCPU]; cpuReq.MilliValue() != 0 {
-				requestCPU = float32(cpuReq.MilliValue()) / 1000
+				requestCPU = utils.CalcCPU(cpuReq)
 			}
 
 			if memoryReq := container.Resources.Requests[corev1.ResourceMemory]; memoryReq.MilliValue() != 0 {
-				requestMemory = float32(memoryReq.MilliValue()) / (1024 * 1024 * 1024)
+				requestMemory = utils.CalcMemory(memoryReq)
 			}
 
 			if cpuLimit := container.Resources.Limits[corev1.ResourceCPU]; cpuLimit.MilliValue() != 0 {
-				limitCPU = float32(cpuLimit.MilliValue()) / 1000
+				limitCPU = utils.CalcCPU(cpuLimit)
 			}
 			if memoryLimit := container.Resources.Limits[corev1.ResourceMemory]; memoryLimit.MilliValue() != 0 {
-				limitMemory = float32(memoryLimit.MilliValue()) / (1024 * 1024 * 1024)
+				limitMemory = utils.CalcMemory(memoryLimit)
 			}
 
 			return Resource{
@@ -83,4 +81,31 @@ func (c *Client) TestToGetDeploymentName(ctx context.Context) []string {
 	})
 
 	return deploymentNames
+}
+
+func (c *Client) GetPodResourceUsage(ctx context.Context, namespace string) ([]ResourceUsage, error) {
+	resources := make([]ResourceUsage, 0)
+
+	if c.metricsClient == nil {
+		return nil, fmt.Errorf("metrics client is not initialized")
+	}
+
+	metrics, err := c.metricsClient.MetricsV1beta1().PodMetricses(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, podMetric := range metrics.Items {
+		for _, container := range podMetric.Containers {
+			cpuUsage := utils.CalcCPU(*container.Usage.Cpu())
+			memoryUsage := utils.CalcMemory(*container.Usage.Memory())
+
+			resources = append(resources, ResourceUsage{
+				PodName: container.Name,
+				CPU:     cpuUsage,
+				Memory:  memoryUsage,
+			})
+		}
+	}
+	return resources, nil
 }
