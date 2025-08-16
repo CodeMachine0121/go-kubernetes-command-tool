@@ -64,7 +64,7 @@ func (c *K8sProxy) GetTotalResource(ctx context.Context, namespace string) []Res
 
 	return lo.FlatMap(deployments.Items, func(deployment v1.Deployment, _ int) []Resource {
 		return lo.Map(deployment.Spec.Template.Spec.Containers, func(container corev1.Container, _ int) Resource {
-			var requestCPU, requestMemory, limitCPU, limitMemory float32
+			var requestCPU, requestMemory, limitCPU, limitMemory float64
 
 			if cpuReq := container.Resources.Requests[corev1.ResourceCPU]; cpuReq.MilliValue() != 0 {
 				requestCPU = utils.CalcCPU(cpuReq)
