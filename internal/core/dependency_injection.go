@@ -1,7 +1,6 @@
 package core
 
 import (
-	"go-k8s-tools/internal/cli"
 	"go-k8s-tools/internal/k8s"
 
 	"go.uber.org/dig"
@@ -15,10 +14,6 @@ func BuildContainer() *dig.Container {
 	}
 
 	if err := container.Provide(k8s.NewK8sService); err != nil {
-		panic(err)
-	}
-
-	if err := container.Provide(cli.NewTerminalUiService); err != nil {
 		panic(err)
 	}
 
