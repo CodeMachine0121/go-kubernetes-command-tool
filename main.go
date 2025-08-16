@@ -13,16 +13,9 @@ func main() {
 	container := core.BuildContainer()
 
 	err := container.Invoke(func(k8sService k8s.IK8sService) {
+		resourceUsagesPercentages := k8sService.GetPercentageOfResourceUsage(context.Background(), "ctbc-csiw")
 
-		resources := k8sService.GetTotalResource(context.Background(), "ctbc-csiw")
-		resourceUsages := k8sService.GetPodResourceUsage(context.Background(), "ctbc-csiw")
-
-		for _, resource := range resources {
-			jsonData, _ := json.Marshal(resource)
-			fmt.Println(string(jsonData))
-		}
-
-		for _, usage := range resourceUsages {
+		for _, usage := range resourceUsagesPercentages {
 			jsonData, _ := json.Marshal(usage)
 			fmt.Println(string(jsonData))
 		}
