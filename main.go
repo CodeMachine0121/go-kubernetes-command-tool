@@ -1,24 +1,17 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
+	"go-k8s-tools/internal/cli"
 	"go-k8s-tools/internal/core"
-	"go-k8s-tools/internal/k8s"
 )
 
 func main() {
 
 	container := core.BuildContainer()
 
-	err := container.Invoke(func(k8sService k8s.IK8sService) {
-		resourceUsagesPercentages := k8sService.GetPercentageOfResourceUsage(context.Background(), "ctbc-csiw")
+	err := container.Invoke(func(terminalUiService cli.ITerminalUIService) {
 
-		for _, usage := range resourceUsagesPercentages {
-			jsonData, _ := json.Marshal(usage)
-			fmt.Println(string(jsonData))
-		}
+		terminalUiService.ShowUsagePercentage("ctbc-csiw")
 	})
 
 	if err != nil {
