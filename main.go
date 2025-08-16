@@ -12,7 +12,7 @@ func main() {
 	container := core.BuildContainer()
 
 	err := container.Invoke(func(service k8s.IK8sService) {
-		terminalUiService := cli.NewTerminalUIModel(context.Background(), service, "ctbc-csiw", 1000)
+		terminalUiService := cli.NewTerminalUIModel(context.Background(), service, "default", 1000)
 		terminalUiService.Run()
 	})
 
