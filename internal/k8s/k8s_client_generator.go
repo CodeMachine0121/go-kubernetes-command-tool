@@ -11,13 +11,7 @@ import (
 	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-type IClientFactory interface {
-	NewClient(kubeConfigPath string) *Client
-}
-
-type ClientFactory struct{}
-
-func (*ClientFactory) NewClient(kubeConfigPath string) *Client {
+func NewClient(kubeConfigPath string) *Client {
 
 	config, err := BuildConfig(kubeConfigPath)
 

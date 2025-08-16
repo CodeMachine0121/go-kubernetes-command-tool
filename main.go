@@ -9,9 +9,7 @@ import (
 
 func main() {
 
-	var factory k8s.IClientFactory = &k8s.ClientFactory{}
-
-	client := factory.NewClient("")
+	client := k8s.NewClient("")
 	resources := client.GetTotalResource(context.Background(), "ctbc-csiw")
 
 	resourceUsages, _ := client.GetPodResourceUsage(context.Background(), "ctbc-csiw")
