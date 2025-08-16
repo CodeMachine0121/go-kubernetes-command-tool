@@ -4,24 +4,31 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go-k8s-tools/internal/core"
 	"go-k8s-tools/internal/k8s"
 )
 
 func main() {
 
-	client := k8s.NewClient("")
-	resources := client.GetTotalResource(context.Background(), "ctbc-csiw")
+	container := core.BuildContainer()
 
-	resourceUsages, _ := client.GetPodResourceUsage(context.Background(), "ctbc-csiw")
+	err := container.Invoke(func(k8sService k8s.IK8sService) {
 
-	for _, resource := range resources {
-		jsonData, _ := json.Marshal(resource)
-		fmt.Println(string(jsonData))
+		resources := k8sService.GetTotalResource(context.Background(), "ctbc-csiw")
+		resourceUsages := k8sService.GetPodResourceUsage(context.Background(), "ctbc-csiw")
+
+		for _, resource := range resources {
+			jsonData, _ := json.Marshal(resource)
+			fmt.Println(string(jsonData))
+		}
+
+		for _, usage := range resourceUsages {
+			jsonData, _ := json.Marshal(usage)
+			fmt.Println(string(jsonData))
+		}
+	})
+
+	if err != nil {
+		panic(err)
 	}
-
-	for _, usage := range resourceUsages {
-		jsonData, _ := json.Marshal(usage)
-		fmt.Println(string(jsonData))
-	}
-
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go-k8s-tools/pkg/utils"
+	"path/filepath"
 
 	"github.com/samber/lo"
 	v1 "k8s.io/api/apps/v1"
@@ -11,26 +12,50 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-type Client struct {
+type IK8sProxy interface {
+	GetTotalResource(ctx context.Context, namespace string) []Resource
+	GetPodResourceUsage(ctx context.Context, namespace string) []ResourceUsage
+}
+
+type K8sProxy struct {
 	clientset     *kubernetes.Clientset
 	metricsClient *metricsclient.Clientset
 	config        *rest.Config
 }
 
-// Clientset returns the underlying Kubernetes clientset
-func (c *Client) Clientset() *kubernetes.Clientset {
-	return c.clientset
+// NewK8sProxy returns a new K8sProxy instance
+func NewK8sProxy() IK8sProxy {
+	// If no kubeconfig path provided, use default locations
+	configPath := filepath.Join(homedir.HomeDir(), ".kube", "config")
+	config, err := clientcmd.BuildConfigFromFlags("", configPath)
+	if err != nil {
+		panic(fmt.Errorf("未找到 kubeconfig，請確認路徑: %s", configPath))
+	}
+
+	clientSet, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(fmt.Errorf("Failed to create kubernet clientSet"))
+	}
+
+	metricsClient, err := metricsclient.NewForConfig(config)
+	if err != nil {
+		panic(fmt.Errorf("Failed to create metrics clientSet"))
+	}
+
+	return &K8sProxy{
+		clientset:     clientSet,
+		config:        config,
+		metricsClient: metricsClient,
+	}
 }
 
-// Config returns the underlying Kubernetes configuration
-func (c *Client) Config() *rest.Config {
-	return c.config
-}
-
-func (c *Client) GetTotalResource(ctx context.Context, namespace string) []Resource {
+// GetTotalResource returns the total resource of all deployments in the specified namespace
+func (c *K8sProxy) GetTotalResource(ctx context.Context, namespace string) []Resource {
 
 	deployments, err := c.clientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -68,31 +93,17 @@ func (c *Client) GetTotalResource(ctx context.Context, namespace string) []Resou
 	})
 }
 
-// TestToGetDeploymentName tests the connection to the Kubernetes cluster
-func (c *Client) TestToGetDeploymentName(ctx context.Context) []string {
-	deployments, err := c.clientset.AppsV1().Deployments("default").List(ctx, metav1.ListOptions{})
-
-	if err != nil {
-		panic(err)
-	}
-
-	deploymentNames := lo.Map(deployments.Items, func(item v1.Deployment, _ int) string {
-		return item.Name
-	})
-
-	return deploymentNames
-}
-
-func (c *Client) GetPodResourceUsage(ctx context.Context, namespace string) ([]ResourceUsage, error) {
+// GetPodResourceUsage returns the resource usage of all pods in the specified namespace
+func (c *K8sProxy) GetPodResourceUsage(ctx context.Context, namespace string) []ResourceUsage {
 	resources := make([]ResourceUsage, 0)
 
 	if c.metricsClient == nil {
-		return nil, fmt.Errorf("metrics client is not initialized")
+		panic(fmt.Errorf("metrics proxy is nil"))
 	}
 
 	metrics, err := c.metricsClient.MetricsV1beta1().PodMetricses(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	for _, podMetric := range metrics.Items {
@@ -107,5 +118,5 @@ func (c *Client) GetPodResourceUsage(ctx context.Context, namespace string) ([]R
 			})
 		}
 	}
-	return resources, nil
+	return resources
 }
