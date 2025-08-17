@@ -11,7 +11,7 @@ import (
 
 type resourceUsageMsg []k8s.ResourceUsagePercentage
 
-type TerminalUIModel struct {
+type ResourceTerminalUi struct {
 	ctx        context.Context
 	k8sService k8s.IK8sService
 	namespace  string
@@ -20,8 +20,8 @@ type TerminalUIModel struct {
 	error      error
 }
 
-func NewTerminalUIModel(ctx context.Context, svc k8s.IK8sService, namespace string, interval time.Duration) *TerminalUIModel {
-	return &TerminalUIModel{
+func NewResourceTerminalUi(ctx context.Context, svc k8s.IK8sService, namespace string, interval time.Duration) *ResourceTerminalUi {
+	return &ResourceTerminalUi{
 		ctx:        ctx,
 		k8sService: svc,
 		namespace:  namespace,
@@ -29,14 +29,14 @@ func NewTerminalUIModel(ctx context.Context, svc k8s.IK8sService, namespace stri
 	}
 }
 
-func (m *TerminalUIModel) Init() tea.Cmd {
+func (m *ResourceTerminalUi) Init() tea.Cmd {
 	return tea.Tick(m.interval, func(t time.Time) tea.Msg {
 		usages := m.k8sService.GetPercentageOfResourceUsage(m.ctx, m.namespace)
 		return resourceUsageMsg(usages)
 	})
 }
 
-func (m *TerminalUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *ResourceTerminalUi) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case resourceUsageMsg:
@@ -53,7 +53,7 @@ func (m *TerminalUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *TerminalUIModel) View() string {
+func (m *ResourceTerminalUi) View() string {
 	var view string
 
 	// Header section with border
@@ -128,9 +128,8 @@ func truncateName(name string, maxLen int) string {
 	return name[:maxLen-3] + "..."
 }
 
-func (m *TerminalUIModel) Run() {
-	model := NewTerminalUIModel(m.ctx, m.k8sService, m.namespace, m.interval)
-	p := tea.NewProgram(model)
+func (m *ResourceTerminalUi) Run() {
+	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}

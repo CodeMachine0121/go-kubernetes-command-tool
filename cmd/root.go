@@ -20,13 +20,12 @@ var (
 var resourceCmd = &cobra.Command{
 	Use:   "resource",
 	Short: "啟動 Kubernetes 資源監控終端介面",
-	Long: `resource 命令會啟動一個即時的終端介面，
-顯示指定命名空間中所有 Pod 的 CPU 和記憶體使用率。
-
+	Long: `resource 命令會啟動一個即時的終端介面，顯示指定命名空間中所有 Pod 的 CPU 和記憶體使用率。
 使用範例：
   gk resource                    # 監控 default 命名空間
   gk resource -n kube-system     # 監控 kube-system 命名空間  
   gk resource -n default -i 2000 # 監控 default 命名空間，每2秒更新一次`,
+
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// 建立依賴注入容器
 		container := core.BuildContainer()
@@ -38,7 +37,7 @@ var resourceCmd = &cobra.Command{
 			fmt.Printf("⏱️  更新間隔: %dms\n", interval)
 			fmt.Printf("💡 按 'q' 或 'Ctrl+C' 退出\n\n")
 
-			terminalUiService := cli.NewTerminalUIModel(
+			terminalUiService := cli.NewResourceTerminalUi(
 				context.Background(),
 				service,
 				namespace,
@@ -53,13 +52,13 @@ var resourceCmd = &cobra.Command{
 var rootCmd = &cobra.Command{
 	Use:   "gk",
 	Short: "Kubernetes 資源監控工具",
-	Long: `gk 是一個強大的 Kubernetes 資源監控 CLI 工具，
-可以幫助您即時監控集群中的資源使用情況。
-
-使用範例：
-  gk resource        # 啟動資源監控終端介面`,
+	Long: `gk 是一個based on Golang 的 Kubernetes CLI 工具。
+		使用範例：
+		  gk resource        # 啟動資源監控終端介面`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+		if err := cmd.Help(); err != nil {
+			os.Exit(1)
+		}
 	},
 }
 
