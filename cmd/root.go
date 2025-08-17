@@ -64,7 +64,6 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "執行命令時發生錯誤: %v\n", err)
 		os.Exit(1)
 	}
 }
