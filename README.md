@@ -57,13 +57,13 @@ To build the executable file using Make:
    ```bash
    make build
    ```
-   The compiled executable will be generated in the `bin/` directory (or as specified in your Makefile).
+   The compiled executable will be generated in the workspace root as `gk.exe` (on Windows) or `gk` (on Unix-like systems).
 
 2. **Run the executable**
    ```bash
-   ./bin/go-k8s-tools
+   ./gk.exe
    ```
-   (Replace with the actual filename if different)
+   (On Unix-like systems, use `./gk`)
 
 > 💡 Make sure you have [Make](https://www.gnu.org/software/make/) and [Go](https://go.dev/doc/install) installed on your system.
 
